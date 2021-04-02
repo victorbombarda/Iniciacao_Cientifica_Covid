@@ -1,0 +1,63 @@
+func_grafico_CovidLP_15 <- function(pais, estado = NULL, data_base){
+  #argumentos devem ser todos fornecidos do tipo string - tanto a data piso quando a data teto devem ter o modelo de data %YYYY-%MM-%DD
+  require("PandemicLP")
+  require("ggplot2")
+  require("dplyr")
+  
+  #"2020-12-22" data máxima da função load_covid()
+  iteracoes <- floor(as.numeric(as.Date("2020-12-22") - as.Date(data_base)) /90 )
+  plot_list = list()
+  previsoes_list = list()
+  
+  for(i in 1:iteracoes){
+    
+    df <- load_covid(pais, estado)
+    df$data <-filter(df$data, df$data$date < as.Date(data_base) + i*90)  
+    model <- pandemic_model(df)
+    posterior <- posterior_predict(model)
+    
+    df2 <- load_covid(pais, estado)
+    df2 <- filter(df2$data, df2$data$date >= as.Date(data_base) + i*90)
+    datas <- df2$date
+    
+    
+    previsoes <- c()
+    for(j in 1:(ncol(posterior$predictive_Long))){previsoes <- append(previsoes, median(posterior$predictive_Long[,j]         )) }
+    for(k in 1:(ncol(posterior$predictive_Long) - length(datas))){datas <- append(datas, datas[length(datas)] + 1)  }
+    print("ITERACAO - ")
+    print(i)
+    df_previsoes <- data.frame(datas = datas, previsoes = previsoes)
+    previsoes_list[[i]] = df_previsoes
+    
+    p = ggplot() + 
+      geom_point(df2, mapping= aes(x = date, y =new_cases , group = 1, color = "Dados reais observados"), shape = 23) +
+      geom_line(df2, mapping= aes(x = date, y =new_cases , group = 1, color = "Dados reais observados")) +
+      geom_point(df$data, mapping = aes(x = date, y = new_cases,group = 2, color = "Dados fornecidos ao modelo"), shape = 21) +
+      geom_line(df$data, mapping = aes(x = date, y = new_cases,group = 2, color = "Dados fornecidos ao modelo")) +
+      geom_point(df_previsoes, mapping =  aes(x = datas, y = previsoes,group = 3, color = "Previsões")) +
+      geom_line(df_previsoes, mapping = aes(x = datas, y = previsoes,group = 3, color = "Previsões"))+
+      labs(x="Data",y=" ") +
+      theme_bw(base_size = 16)+
+      scale_x_date() + scale_y_continuous(expand = c(0,0))+ #, limits = c(0,73000)) +
+      ggtitle("Comparação com modelo") + 
+      guides(colour=guide_legend(title="Legenda")) 
+    
+    plot_list[[i]] = p
+    print("TERIMNOU O GRÁFICO NÚMERO -")
+    print(i)
+    
+  }
+  print("SALVANDO GRÁFICOS") #GRÁFICOS SÃO SALVOS NO DEVIDO WORKING DIRECTORY 
+  for (i in 1:iteracoes) {
+    file_name = paste("COVIDLP_90dias_",pais, "_", estado,"_", i, ".png", sep="")
+    file_name_csv =paste("COVIDLP_90dias_",pais, "_", estado,"_", i, ".csv", sep="") 
+    png(file_name,width=1000,height=900)
+    print(plot_list[[i]])
+    dev.off()
+    write.csv(previsoes_list[[i]], file_name_csv)
+  }
+}
+
+func_grafico_CovidLP_15("Brazil", "RJ",data_base = "2020-08-20")  
+
+
