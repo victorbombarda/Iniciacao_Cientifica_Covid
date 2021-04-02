@@ -58,6 +58,6 @@ func_grafico_CovidLP_15 <- function(pais, estado = NULL, data_base){
   }
 }
 
-func_grafico_CovidLP_15("Brazil", "RJ",data_base = "2020-08-20")  
+
 
 
