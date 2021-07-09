@@ -44,7 +44,8 @@ get_pp <- function(fit, window_size, pop){
       pred_past,
       pred_fut[1:window_size, ]
     ),
-    type = c(rep("training", K), rep("testing", window_size))
+    type = c(rep("training", K),
+             rep("testing", window_size))
   )
   rownames(predictions) <- NULL
   
@@ -75,9 +76,17 @@ make_predictions <- function(training_data,
   
   ### Fit the model
   options(mc.cores = 4)
-  model <- PandemicLP::pandemic_model(training_data,
-                                      chains = 4)
+
   # TODO: check mcmc does not show convergence problems
+  fail <- 1
+  iter <- 0
+  while(fail == 1 && iter <= Niter){
+    model <- PandemicLP::pandemic_model(training_data,
+                                        chains = 4)
+    fail <- check_fail(model)
+    iter <- iter + 1
+  }
+  
   posterior <- rstantools::posterior_predict(model)
   model.preds <- get_pp(fit = posterior, window_size = window_size)
   ## Consolidate output
@@ -148,7 +157,7 @@ ma <- function(x, n = 7){
   stats::filter(x, rep(1 / n, n), sides = 2)
 }
 
-one.wave.preds$smoothed_new_cases <- ma(x = one.wave.preds$new_cases)
+one.wave.preds$smoothed_new_cases <- ma(x = one.wave.preds$new_cases, n = 14)
 
 p <- ggplot(data = one.wave.preds,
             aes(x = date, y = pred_mean,
@@ -170,32 +179,32 @@ p
 #####
 ## cumulative version
 
-# one.wave.preds$cum_pred_mean <- cumsum(one.wave.preds$pred_mean)
-# one.wave.preds$cum_pred_lwr <- cumsum(one.wave.preds$pred_lwr)
-# one.wave.preds$cum_pred_upr <- cumsum(one.wave.preds$pred_upr)
-# 
-# p.cumulative <- ggplot(data = one.wave.preds,
-#             aes(x = date, y = cum_pred_mean,
-#                 colour = window, fill = window)) +
-#   geom_line(aes(linetype = type)) +
-#   geom_ribbon(aes(ymin = cum_pred_lwr,
-#                   ymax = cum_pred_upr,
-#                   linetype = type),
-#               alpha = 0.4) +
-#   geom_point(data = one.wave.preds,
-#              aes(x = date, y = cases),
-#              colour = "black",
-#              inherit.aes = FALSE) +
-#   # geom_smooth(data = one.wave.preds,
-#   #            aes(x = date, y = new_cases),
-#   #            colour = "black",
-#   #            inherit.aes = FALSE) +
-#   geom_vline(xintercept = as.Date(unique(one.wave.preds$final_date)),
-#              linetype = "solid") + 
-#   scale_x_date("Time") +
-#   scale_y_continuous("New cases") +
-#   theme_bw(base_size = 16) +
-#   theme(legend.position = "none")
-# p.cumulative
+one.wave.preds$cum_pred_mean <- cumsum(one.wave.preds$pred_mean)
+one.wave.preds$cum_pred_lwr <- cumsum(one.wave.preds$pred_lwr)
+one.wave.preds$cum_pred_upr <- cumsum(one.wave.preds$pred_upr)
+
+p.cumulative <- ggplot(data = one.wave.preds,
+            aes(x = date, y = cum_pred_mean,
+                colour = window, fill = window)) +
+  geom_line(aes(linetype = type)) +
+  geom_ribbon(aes(ymin = cum_pred_lwr,
+                  ymax = cum_pred_upr,
+                  linetype = type),
+              alpha = 0.4) +
+  geom_point(data = one.wave.preds,
+             aes(x = date, y = cases),
+             colour = "black",
+             inherit.aes = FALSE) +
+  # geom_smooth(data = one.wave.preds,
+  #            aes(x = date, y = new_cases),
+  #            colour = "black",
+  #            inherit.aes = FALSE) +
+  geom_vline(xintercept = as.Date(unique(one.wave.preds$final_date)),
+             linetype = "solid") +
+  scale_x_date("Time") +
+  scale_y_continuous("New cases") +
+  theme_bw(base_size = 16) +
+  theme(legend.position = "none")
+p.cumulative
   
 # max_date <- "2020-12-22"
