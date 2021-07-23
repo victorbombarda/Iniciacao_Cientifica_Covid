@@ -1,4 +1,4 @@
-source("covid_aux.R")
+source("covid_aux.r")
 
 comp.time <- system.time(
   one.wave.preds <- get_all_predictions(country = "Brazil",
