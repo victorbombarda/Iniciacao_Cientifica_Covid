@@ -69,7 +69,7 @@ p.cumulative <- ggplot(data = one.wave.preds,
   geom_vline(xintercept = as.Date(unique(one.wave.preds$final_date)),
              linetype = "solid") +
   scale_x_date("Time") +
-  scale_y_continuous("New cases") +
+  scale_y_continuous("Cumulative cases") +
   theme_bw(base_size = 16) +
   theme(legend.position = "none")
 p.cumulative
