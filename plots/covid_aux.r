@@ -89,21 +89,31 @@ make_predictions <- function(training_data,
   ### Fit the model
   options(mc.cores = 4)
   
-  # TODO: check mcmc does not show convergence problems
-  fail <- 1
-  iter <- 0
-  while(fail == 1 && iter <= Niter){
-    model <- PandemicLP::pandemic_model(training_data,
-                                        chains = 4)
-    mm <- rstan::monitor(model$fit, print = FALSE)
-    
-    fail <- check_fail(mm)
-    iter <- iter + 1
+  # TODO: check for existence of model
+  mname.ideal <- paste0(state, "_", country, "_", 
+                  final.date, "_",
+                  "fail=", 0, ".RData")
+  
+  if(file.exists(mname.ideal) == 1){
+    # get saved model
+    load(mname.ideal)
+  }else{
+    # compute
+    fail <- 1
+    iter <- 0
+    while(fail == 1 && iter <= Niter){
+      model <- PandemicLP::pandemic_model(training_data,
+                                          chains = 4)
+      mm <- rstan::monitor(model$fit, print = FALSE)
+      
+      fail <- check_fail(mm)
+      iter <- iter + 1
+    }
+    mname.real <- paste0(state, "_", country, "_", 
+                         final.date, "_",
+                         "fail=", fail, ".RData")
+    save(model, file = mname.real)
   }
-  
-  save(model, file = paste0(state, "_",country, "_",final.date,"_", "fail=", fail, ".RData"))
-  
-  
   
   posterior <- rstantools::posterior_predict(model)
   model.preds <- get_pp(fit = posterior, window_size = window_size)

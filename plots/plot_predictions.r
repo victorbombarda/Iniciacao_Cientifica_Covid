@@ -5,7 +5,7 @@ comp.time <- system.time(
                                         state = "SP",
                                         window_size = 15,
                                         base_date = "2020-06-15",
-                                        max_date = "2020-06-30")
+                                        max_date = "2020-12-22")
 )
 
 comp.time
@@ -33,7 +33,7 @@ p <- ggplot(data = one.wave.preds,
   geom_ribbon(aes(ymin = pred_lwr, ymax = pred_upr, linetype = type),
               alpha = 0.4) +
   geom_point(data = one.wave.preds,
-             aes(x = date, y = new_cases),
+             aes(x = date, y = smoothed_new_cases),
              colour = "black",
              inherit.aes = FALSE) +
   geom_vline(xintercept = as.Date(unique(one.wave.preds$final_date)),
